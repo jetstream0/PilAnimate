@@ -1,4 +1,5 @@
-from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageEnhance, ImageColor
+#pilaniamte version 0.3
+from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageEnhance, ImageColor, ImageFont
 import cv2
 import numpy
 from time import sleep
@@ -12,19 +13,13 @@ class Animation:
     self.size = size
     for i in range(layer_num):
       self.layers.append(Layer(size, fps, mode=mode, color=color))
-  def export(self):
-    frames = 0
+  def export(self, filename="hey"):
+    video = cv2.VideoWriter(filename+".avi", cv2.VideoWriter_fourcc(*'XVID'), 30, self.size)
     for frame_num in range(len(self.layers[0].frames)):
-      frames += 1
       frame = Image.new(self.mode, self.size)
       for i in range(len(self.layers)):
         frame.paste(self.layers[i].frames[frame_num], mask=self.layers[i].frames[frame_num])
-      frame.save("frames/"+str(frame_num)+".png")
-    video = cv2.VideoWriter("hey.avi", cv2.VideoWriter_fourcc(*'XVID'), 30, self.size)
-    #video = cv2.VideoWriter("hey.avi", 0, 1, self.size) 
-    for frame_num in range(frames): 
-      #video.write(numpy.array(frame))
-      video.write(cv2.imread("frames/"+str(frame_num)+".png"))
+      video.write(cv2.cvtColor(numpy.array(frame), cv2.COLOR_RGB2BGR))
     video.release()
 
 class Layer:
@@ -59,21 +54,38 @@ class Layer:
     self.img.paste(imageToAdd,box=coords)
 
   #translation functions
-  def rotate(self, angle, center=None, outsideFillColor=None):
-    self.img.rotate(angle, resample=0, center=center, fillcolor=outsideFillColor)
+  def rotate(self, angle, center=None, outsideFillColor=None, copy=None):
+    if copy:
+      self.img = copy.rotate(angle, resample=0, center=center, fillcolor=outsideFillColor)
+      self.layer = ImageDraw.Draw(self.img)
+    else:
+      self.img = self.img.rotate(angle, resample=0, center=center, fillcolor=outsideFillColor)
+      self.layer = ImageDraw.Draw(self.img)
   def translate(self,x,y,img):
-    """
-    self.img.transform(self.size, Image.AFFINE, (0, 0, x, 0, 0, y))
-    """
     newimg = Image.new(self.mode, self.size, color=0)
     newimg.paste(img, (round(0+x),round(0+y)), img)
     self.img = newimg
+    self.layer = ImageDraw.Draw(self.img)
 
   #transparency functions
+  def changeOpacity(self, value):
+    data = self.img.getdata()
+    newData = []
+    for datum in data:
+      if datum[3] == 0:
+        newData.append((datum[0], datum[1], datum[2], 0))
+      else:
+        newData.append((datum[0], datum[1], datum[2], value))
+    self.img.putdata(newData)
+  def changeEntireOpacity(self, value):
+    self.img.putalpha(value)
 
   #color change functions
 
   #image filter functions
+  def blur(self):
+    self.img = self.img.filter(ImageFilter.BLUR)
+    self.layer = ImageDraw.Draw(self.img)
 
   #blend
 
@@ -89,6 +101,10 @@ class Layer:
   def doNothing(self, frames):
     self.frames = self.frames+[self.img.copy()]*frames
     #for i in range(frames): self.saveFrame()
+  
+  #turn frame into png
+  def save(self, filename):
+    self.img.save(filename+".png")
 
   #shortcut save functions (ie a function that translates every frame and also saves frame)
   def rise(self, frames, total_rise_amount):
@@ -100,5 +116,32 @@ class Layer:
         newimg = Image.new(self.mode, self.size, color=0)
         newimg.paste(copy, (0,total_rise_amount), copy)
         self.img = newimg
-      self.translate(0,total_rise_amount/frames*i,copy)
+      self.translate(0,total_rise_amount/frames*(i+1),copy)
+      self.saveFrame()
+  def descend(self, frames, total_descend_amount):
+    copy = self.img.copy()
+    for i in range(frames):
+      self.clearAll()
+      #if last frame
+      if i == frames-1:
+        newimg = Image.new(self.mode, self.size, color=0)
+        newimg.paste(copy, (0,total_descend_amount), copy)
+        self.img = newimg
+      self.translate(0,total_descend_amount/frames*(i+1),copy)
+      self.saveFrame()
+  def slide(self, frames, total_slide_amount):
+    copy = self.img.copy()
+    for i in range(frames):
+      self.clearAll()
+      #if last frame
+      if i == frames-1:
+        newimg = Image.new(self.mode, self.size, color=0)
+        newimg.paste(copy, (total_slide_amount,0), copy)
+        self.img = newimg
+      self.translate(total_slide_amount/frames*(i+1), 0, copy)
+      self.saveFrame()
+  def spin(self, frames, degrees, center):
+    copy = self.img.copy()
+    for i in range(frames):
+      self.rotate(degrees/frames*(i+1), center=center, copy=copy)
       self.saveFrame()
