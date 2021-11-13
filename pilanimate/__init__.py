@@ -1,9 +1,9 @@
 #pilaniamte version 0.3
-from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageEnhance, ImageColor, ImageFont
+from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageEnhance, ImageColor, ImageFont, ImageSequence
 import cv2
 import numpy
 from time import sleep
-import os
+import os, math
 
 class Animation:
   def __init__(self, layer_num, size=(1600,900), fps=25, mode="RGBA", color=0):
@@ -52,6 +52,12 @@ class Layer:
     self.layer.text(anchorCoords, text, fill=None, font=None, anchor=None, spacing=4, align='left', direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False)
   def addImage(self, imageToAdd, coords=None):
     self.img.paste(imageToAdd,box=coords)
+  def addGif(self, gif_location, times_to_repeat, coords=None):
+    for i in range(times_to_repeat):
+      gif = Image.open(gif_location)
+      for frame in ImageSequence.Iterator(gif):
+        self.img.paste(frame, box=coords)
+        self.frames.append(self.img.copy())
 
   #translation functions
   def rotate(self, angle, center=None, outsideFillColor=None, copy=None):
@@ -69,16 +75,40 @@ class Layer:
 
   #transparency functions
   def changeOpacity(self, value):
-    data = self.img.getdata()
-    newData = []
-    for datum in data:
-      if datum[3] == 0:
-        newData.append((datum[0], datum[1], datum[2], 0))
-      else:
-        newData.append((datum[0], datum[1], datum[2], value))
-    self.img.putdata(newData)
+    pixels = self.img.load()
+    for x in range(0,self.size[0]):
+      for y in range(0,self.size[1]):
+        if pixels[x,y] != (0,0,0,0):
+          pixels[x,y] = (pixels[x,y][0], pixels[x,y][1], pixels[x,y][2], value)
   def changeEntireOpacity(self, value):
     self.img.putalpha(value)
+
+  #UNTESTED
+  def fadeIn(self, frames):
+    original = self.img.copy()
+    current = 0
+    for i in range(frames-1):
+      self.img = original
+      self.changeOpacity(current+math.floor(100/frames))
+      current = current+math.floor(100/frames)
+      self.saveFrame()
+    self.changeOpacity(100)
+    self.saveFrame()
+  def fadeOut(self, frames):
+    original = self.img.copy()
+    current = 100
+    for i in range(frames-1):
+      self.img = original
+      self.changeOpacity(current-math.floor(100/frames))
+      current = current-math.floor(100/frames)
+      self.saveFrame()
+    self.changeOpacity(0)
+    self.saveFrame()
+
+  #transform
+  def transform(self, size, method, data=None, resample=0, fill=1, fillcolor=None):
+    self.img = self.img.transform(size, method, data=data, resample=resample, fill=fill, fillcolor=fillcolor)
+    self.layer = ImageDraw.Draw(self.img)
 
   #color change functions
 

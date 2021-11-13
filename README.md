@@ -1,2 +1,3 @@
 # PilAnimate
-A python library using PIL to create animations. Mostly for my own personal use so won't really be documented. 
+A python library using PIL to create animations. 
+Tutorial: https://www.prussiafan.club/articles/pilanimate
