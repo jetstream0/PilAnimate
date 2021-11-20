@@ -10,7 +10,7 @@ setup(
     # Needed for dependencies
     install_requires=['Pillow',"opencv-python"],
     # *strongly* suggested for sharing
-    version='0.4',
+    version='0.4.1',
     # The license can be anything you like
     license='MIT',
     description="A python library using PIL to create animations. Mostly for my own personal use so won't really be documented.",

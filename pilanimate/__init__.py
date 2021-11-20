@@ -1,4 +1,4 @@
-#pilaniamte version 0.3
+#pilaniamte version 0.4.1
 from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageEnhance, ImageColor, ImageFont, ImageSequence
 import cv2
 import numpy
@@ -24,12 +24,12 @@ class Animation:
 
 class Layer:
   def __init__(self, size, fps, mode="RGBA", color=0):
-    self.size = size;
+    self.size = size
     self.img = Image.new(mode, size, color=0)
     self.layer = ImageDraw.Draw(self.img)
-    self.fps = fps;
-    self.frames = [];
-    self.mode = mode;
+    self.fps = fps
+    self.frames = []
+    self.mode = mode
 
   #functions that draw stuff on
   def createPoint(self, coords, fill=None):
@@ -47,9 +47,9 @@ class Layer:
   def createRoundedRectangle(self, boundingBox, radius=0, fill=None, outline=None, width=0):
     self.layer.rounded_rectangle(boundingBox, radius=radius, fill=fill, outline=outline, width=width)
   def fillAll(self, fill=None, outline=None, width=0):
-    self.layer.rectangle(((0,0),(1600,900)), fill=fill, outline=outline, width=width)
+    self.layer.rectangle(((0,0),self.size), fill=fill, outline=outline, width=width)
   def createText(self, anchorCoords, text, fill=None, font=None, anchor=None, spacing=4, align='left', direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False):
-    self.layer.text(anchorCoords, text, fill=None, font=None, anchor=None, spacing=4, align='left', direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False)
+    self.layer.text(anchorCoords, text, fill=fill, font=font, anchor=anchor, spacing=spacing, align=align, direction=direction, features=features, language=language, stroke_width=stroke_width, stroke_fill=stroke_fill, embedded_color=embedded_color)
   def addImage(self, imageToAdd, coords=None):
     self.img.paste(imageToAdd,box=coords)
   def addGif(self, gif_location, times_to_repeat, coords=None):
@@ -67,7 +67,7 @@ class Layer:
     else:
       self.img = self.img.rotate(angle, resample=0, center=center, fillcolor=outsideFillColor)
       self.layer = ImageDraw.Draw(self.img)
-  def translate(self,x,y,img):
+  def translate(self, x, y, img):
     newimg = Image.new(self.mode, self.size, color=0)
     newimg.paste(img, (round(0+x),round(0+y)), img)
     self.img = newimg
